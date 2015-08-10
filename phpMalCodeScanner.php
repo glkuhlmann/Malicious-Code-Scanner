@@ -12,7 +12,7 @@ License: GPL-2
 
 
 // Set to your email:
-define('SEND_EMAIL_ALERTS_TO','youremail@example.com');
+define('SEND_EMAIL_ALERTS_TO','glkuhlma@valdosta.edu');
 
 
 ############################################ START CLASS
@@ -22,22 +22,24 @@ class phpMalCodeScan {
 
 	public $infected_files = array();
 	private $scanned_files = array();
-	
-	
+
+
 	function __construct() {
-		$this->scan(dirname(__FILE__));
+		global $argv;
+
+		$this->scan($argv[1]);
 		$this->sendalert();
 	}
-	
-	
+
+
 	function scan($dir) {
 		$this->scanned_files[] = $dir;
 		$files = scandir($dir);
-		
+
 		if(!is_array($files)) {
 			throw new Exception('Unable to scan directory ' . $dir . '.  Please make sure proper permissions have been set.');
 		}
-		
+
 		foreach($files as $file) {
 			if(is_file($dir.'/'.$file) && !in_array($dir.'/'.$file,$this->scanned_files)) {
 				$this->check(file_get_contents($dir.'/'.$file),$dir.'/'.$file);
@@ -46,17 +48,27 @@ class phpMalCodeScan {
 			}
 		}
 	}
-	
-	
+
+
 	function check($contents,$file) {
 		$this->scanned_files[] = $file;
+
+		// base64 and eval check
 		if(preg_match('/eval\((base64|eval|\$_|\$\$|\$[A-Za-z_0-9\{]*(\(|\{|\[))/i',$contents)) {
+			$this->infected_files[] = $file;
+		}
+
+		// surprise check
+		if(!strpos($contents, 'com-kl96.net') === FALSE || !strpos($contents, 'com-mk84.net') === FALSE) {
 			$this->infected_files[] = $file;
 		}
 	}
 
 
 	function sendalert() {
+
+		print_r($this->infected_files);
+
 		if(count($this->infected_files) != 0) {
 			$message = "== MALICIOUS CODE FOUND == \n\n";
 			$message .= "The following files appear to be infected: \n";
